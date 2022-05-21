@@ -1,8 +1,8 @@
 'use strict'
+
 const CARROT_SIZE = 80;
-const CARROR_COUNT = 5;
-const BUG_COUNT = 5;
-const GAME_DURATION_SEC = 5;
+let carror_count = 15;
+let bug_count = 15;
 
 const field = document.querySelector('.game__field');
 const fieldRect = field.getBoundingClientRect();
@@ -13,6 +13,12 @@ const gameScore = document.querySelector('.game__score');
 const popUp = document.querySelector('.pop-up');
 const popUpText = document.querySelector('.pop-up__message');
 const popUpRefresh = document.querySelector('.pop-up__refresh');
+
+const carrotSound = new Audio('./sound/carrot_pull.mp3');
+const alertSound = new Audio('./sound/alert.wav');
+const bgSound = new Audio('./sound/bg.mp3');
+const bugSound = new Audio('./sound/bug_pull.mp3');
+const winSound = new Audio('./sound/game_win.mp3');
 
 let started = false;
 let score = 0;
@@ -27,28 +33,46 @@ gameBtn.addEventListener('click', () => {
   } else {
     startGame();
   } 
-  started = !started;
+});
+
+popUpRefresh.addEventListener('click', () => {
+  startGame();
+  hidePopUp();
 });
 
 function startGame() {
+  started = true;
   initGame();
   showStopButton();
   showTimerAndScore();
   startGameTimer();
   moveBugs();
+  playSound(bgSound);
 }
 
-
 function stopGame() {
+  started = false;
   stopGameTimer();
   hideGameButton();
-  showPopUpWithText('REPLAY?');
+  showPopUpWithText('REPLAY❓');
+  playSound(alertSound);
+  stopSound(bgSound);
+}
+
+function finishGame(win) {
+  started = false;
+  hideGameButton();
+  win ? playSound(winSound) : playSound(bugSound);  
+  stopGameTimer();
+  stopSound(bgSound);
+  showPopUpWithText(win? 'YOU WON👍' : 'YOU LOST💥');
 }
 
 function showStopButton() {
-  const icon = gameBtn.querySelector('.fa-play');
+  const icon = gameBtn.querySelector('.fa-solid');
   icon.classList.add('fa-stop');
   icon.classList.remove('fa-play');
+  gameBtn.style.visibility = 'visible';
 }
 
 function hideGameButton() {
@@ -61,7 +85,7 @@ function showTimerAndScore() {
 }
 
 function startGameTimer() {
-  let remainingTimeSec = GAME_DURATION_SEC;
+  let remainingTimeSec = Math.floor((Math.random() * (15 - 10) + 10));
   updateTimerText(remainingTimeSec);
   timer = setInterval(() => {
     if (remainingTimeSec <= 0) {
@@ -69,6 +93,7 @@ function startGameTimer() {
       bugsMoveInterval.forEach(bug => {
         clearInterval(bug);
       })
+      finishGame(carror_count === score);
       return;
     } else {
       updateTimerText(--remainingTimeSec);
@@ -94,11 +119,18 @@ function showPopUpWithText(text) {
   popUp.classList.remove('pop-up-hide');
 }
 
+function hidePopUp() {
+  popUp.classList.add('pop-up-hide');
+}
+
 function initGame() {
+  score = 0;
   field.innerHTML = '';
-  gameScore.innerText = CARROR_COUNT;
-  addItem('carrot', CARROR_COUNT, 'img/carrot.png');
-  addItem('bug', BUG_COUNT, 'img/bug.png');
+  carror_count = Math.floor((Math.random() * (15 - 10) + 10));
+  bug_count = Math.floor((Math.random() * (20 - 15) + 15));
+  gameScore.innerText = carror_count;
+  addItem('carrot', carror_count, 'img/carrot.png');
+  addItem('bug', bug_count, 'img/bug_left.png');
 } 
 
 function onFieldClick(event) {
@@ -109,18 +141,27 @@ function onFieldClick(event) {
   if (target.matches('.carrot')) {
     target.remove();
     score++;
+    playSound(carrotSound);
     updateScoreBoard();
-    if (score === CARROR_COUNT) {
-      finishGame();
+    if (score === carror_count) {
+      finishGame(true);
     }
   } else if (target.matches('.bug')) {
-    stopGameTimer();
-    finishGame();
+    finishGame(false);
   }
 }
 
+function playSound(sound) {
+  sound.currentTime = 0;
+  sound.play();
+}
+
+function stopSound(sound) {
+  sound.pause();
+}
+
 function updateScoreBoard() {
-  gameScore.innerText = CARROR_COUNT - score;
+  gameScore.innerText = carror_count - score;
 
 }
 
@@ -146,24 +187,27 @@ function moveBugs() {
   const bugs = document.querySelectorAll('.bug');
   const fieldWidth = fieldRect.width - CARROT_SIZE;
   bugs.forEach(bug => {
-    let leftMove = false;
+    let rightMove = false;
     if (Math.floor((Math.random()*2))) {
-      leftMove = true;
+      rightMove = true;
+      bug.src = 'img/bug_right.png';
     } 
     bugsMoveInterval.push(setInterval(() => {
       let movePx = undefined;
       const bugLeftPx = getComputedStyle(bug).left;
       const bugLeftNum = Number(bugLeftPx.slice(0, -2));
-    if (leftMove) {
+    if (rightMove) {
       if (bugLeftNum >= fieldWidth) {
-        leftMove = false;
+        rightMove = false;
+        bug.src = 'img/bug_left.png';
         return;
       }
       movePx = bugLeftNum + 10;
       bug.style.left = `${movePx}px`;
     } else {
       if (bugLeftNum <= 0) {
-        leftMove = true;
+        rightMove = true;
+        bug.src = 'img/bug_right.png';
         return;
       }
       movePx = bugLeftNum - 10;

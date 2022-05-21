@@ -19,6 +19,7 @@ button {
 
 body {
   text-align: center;
+  background-color: var(--color-black);
 }
 
 .game {
@@ -60,20 +61,21 @@ body {
   font-size: var(--font-size-medium);
   margin-top: 8px;
   visibility: hidden;
+  user-select: none;
 }
 
 .game__score {
   text-align: center;
-  line-height: 100%;
   width: 50px;
   height: 50px;
   margin-top: 8px;
-  font-size: var(--font-size-large);
+  font-size: var(--font-size-medium);
   border: 3px solid var(--color-black);
   background-color: var(--color-darksalmon);
   border-radius: 50%;
   color: var(--color-white);
   visibility: hidden;
+  user-select: none;
 }
 
 .game__field {
@@ -112,4 +114,14 @@ body {
 .pop-up__message {
   display: block;
   font-size: var(--font-size-medium);
+}
+
+.carrot, 
+.bug {
+  transition: transform 100ms ease-in;
+}
+
+.carrot:hover,
+.bug:hover {
+  transform: scale(1.1);
 }
